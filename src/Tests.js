@@ -136,10 +136,11 @@ function* testCommand(device: Device): Generator<*, boolean, *> {
       [device, 'writeCharacteristicWithoutResponseForService'],
       '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // SERVICE UUID
       '6e400002-b5a3-f393-e0a9-e50e24dcca9e', // UUID
-      'AAM=', // VALUE in base64 (in hex is 0003)
+      'AAI=', // VALUE in base64 (in hex is 0002)
     );
     console.log('response: ', response);
   } catch (error) {
+    console.log('error: ', error);
     yield put(logError(error));
     return false;
   }

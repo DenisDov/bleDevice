@@ -150,6 +150,7 @@ class SensorTag extends Component<Props, State> {
   }
 
   renderLogs() {
+    console.log('this.props.logs: ', this.props.logs);
     return (
       <View style={{flex: 1, padding: 10, paddingTop: 0}}>
         <FlatList
