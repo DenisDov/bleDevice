@@ -23,14 +23,14 @@ export const SensorTagTests: {[string]: SensorTagTestMetadata} = {
     title: 'Read all characteristics',
     execute: readAllCharacteristics,
   },
-  READ_TEMPERATURE: {
-    id: 'READ_TEMPERATURE',
-    title: 'Read temperature',
-    execute: readTemperature,
-  },
+  // READ_TEMPERATURE: {
+  //   id: 'READ_TEMPERATURE',
+  //   title: 'Read temperature',
+  //   execute: readTemperature,
+  // },
   TEST_COMMAND: {
     id: 'TEST_COMMAND',
-    title: 'Test write',
+    title: 'Test write 0002',
     execute: testCommand,
   },
 };
@@ -139,6 +139,21 @@ function* testCommand(device: Device): Generator<*, boolean, *> {
       'AAI=', // VALUE in base64 (in hex is 0002)
     );
     console.log('response: ', response);
+
+    // const notification = yield call(
+    //   [device, 'monitorCharacteristicForService'],
+    //   '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // SERVICE UUID
+    //   '6e400002-b5a3-f393-e0a9-e50e24dcca9e', // UUID
+    //   (error, characteristics) => {
+    //     if (error) {
+    //       console.log('errval', error);
+    //     }
+    //     if (characteristics) {
+    //       console.log('charval', characteristics.value);
+    //     }
+    //   },
+    // );
+    // console.log('notification: ', notification);
   } catch (error) {
     console.log('error: ', error);
     yield put(logError(error));
