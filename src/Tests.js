@@ -12,6 +12,8 @@ import {
 } from 'react-native-ble-plx';
 import {log, logError} from './Reducer';
 
+import {base64ToHex} from './utils';
+
 export type SensorTagTestMetadata = {
   id: string,
   title: string,
@@ -35,16 +37,6 @@ export const SensorTagTests: {[string]: SensorTagTestMetadata} = {
     execute: testCommand,
   },
 };
-
-function base64ToHex(str) {
-  const raw = atob(str);
-  let result = '';
-  for (let i = 0; i < raw.length; i++) {
-    const hex = raw.charCodeAt(i).toString(16);
-    result += hex.length === 2 ? hex : '0' + hex;
-  }
-  return result.toUpperCase();
-}
 
 function notificationListener(device, SERVICE_UUID, CHAR_UUID) {
   return eventChannel(emit => {
