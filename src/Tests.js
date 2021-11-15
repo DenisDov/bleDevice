@@ -1,6 +1,7 @@
 // @flow
 
-import {put, call} from 'redux-saga/effects';
+import {put, call, take, fork, spawn} from 'redux-saga/effects';
+import {buffers, eventChannel} from 'redux-saga';
 import {
   Device,
   Service,
@@ -34,6 +35,50 @@ export const SensorTagTests: {[string]: SensorTagTestMetadata} = {
     execute: testCommand,
   },
 };
+
+function base64ToHex(str) {
+  const raw = atob(str);
+  let result = '';
+  for (let i = 0; i < raw.length; i++) {
+    const hex = raw.charCodeAt(i).toString(16);
+    result += hex.length === 2 ? hex : '0' + hex;
+  }
+  return result.toUpperCase();
+}
+
+function notificationListener(device, SERVICE_UUID, CHAR_UUID) {
+  return eventChannel(emit => {
+    const subscription = device.monitorCharacteristicForService(
+      SERVICE_UUID,
+      CHAR_UUID,
+      (error, characteristic) => {
+        emit([error, characteristic]);
+      },
+    );
+    return () => {
+      subscription.remove();
+    };
+  }, buffers.expanding(1));
+}
+
+function* notificationSaga(device, SERVICE_UUID, CHAR_UUID) {
+  const channel = yield call(
+    notificationListener,
+    device,
+    SERVICE_UUID,
+    CHAR_UUID,
+  );
+  try {
+    while (true) {
+      // take(END) will cause the saga to terminate by jumping to the finally block
+      const [error, characteristic] = yield take(channel);
+      console.log('error, characteristic: ', error, characteristic);
+      yield put(log(`Get value ${base64ToHex(characteristic.value)}`));
+    }
+  } finally {
+    console.log('saga terminated');
+  }
+}
 
 function* readAllCharacteristics(device: Device): Generator<*, boolean, *> {
   try {
@@ -116,44 +161,29 @@ function* readTemperature(device: Device): Generator<*, boolean, *> {
   return false;
 }
 
-function* testCommand(device: Device): Generator<*, boolean, *> {
-  const isCONN = yield call([device, 'isConnected']);
-  console.log('isCONN123: ', isCONN);
-  console.log('deviceCURRENT: ', device);
-  yield put(log('Send 0002'));
+function* testCommand(device) {
+  // const isCONN = yield call([device, 'isConnected']);
+  // console.log('isCONN123: ', isCONN);
+  // console.log('deviceCURRENT: ', device);
+  yield put(log('Send value 0002'));
 
-  const devCS = yield call([device, 'discoverAllServicesAndCharacteristics']);
-  console.log('devCS: ', devCS);
+  // const devCS = yield call([device, 'discoverAllServicesAndCharacteristics']);
+  // console.log('devCS: ', devCS);
+
   try {
-    // const services: Array<Service> = yield call([
-    //   device,
-    //   device.discoverAllServicesAndCharacteristics,
-    // ]);
-    // console.log('servicesDISCOVER: ', services);
-    // const uuids = yield call([device, 'serviceUUIDs']);
-    // console.log('uuids: ', uuids);
-    const response = yield call(
+    yield spawn(
+      notificationSaga,
+      device,
+      '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
+      '6e400003-b5a3-f393-e0a9-e50e24dcca9e',
+    );
+
+    yield call(
       [device, 'writeCharacteristicWithoutResponseForService'],
       '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // SERVICE UUID
-      '6e400002-b5a3-f393-e0a9-e50e24dcca9e', // UUID
+      '6e400002-b5a3-f393-e0a9-e50e24dcca9e', // RX CHARACTERISTIC UUID
       'AAI=', // VALUE in base64 (in hex is 0002)
     );
-    console.log('response: ', response);
-
-    // const notification = yield call(
-    //   [device, 'monitorCharacteristicForService'],
-    //   '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // SERVICE UUID
-    //   '6e400002-b5a3-f393-e0a9-e50e24dcca9e', // UUID
-    //   (error, characteristics) => {
-    //     if (error) {
-    //       console.log('errval', error);
-    //     }
-    //     if (characteristics) {
-    //       console.log('charval', characteristics.value);
-    //     }
-    //   },
-    // );
-    // console.log('notification: ', notification);
   } catch (error) {
     console.log('error: ', error);
     yield put(logError(error));
@@ -164,5 +194,6 @@ function* testCommand(device: Device): Generator<*, boolean, *> {
 }
 
 // DEVICE ID = C2:A2:02:56:AA:90
-// SERVICE UUID = 00001800-0000-1000-8000-00805f9b34fb
-// UUID = 00002a00-0000-1000-8000-00805f9b34fb
+// SERVICE UUID = 6e400001-b5a3-f393-e0a9-e50e24dcca9e
+// RX CHARACTERISTIC UUID = 6e400002-b5a3-f393-e0a9-e50e24dcca9e
+// TX CHARACTERISTIC UUID = 6e400002-b5a3-f393-e0a9-e50e24dcca9e
