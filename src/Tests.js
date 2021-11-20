@@ -76,6 +76,10 @@ function* notificationSaga(device, SERVICE_UUID, CHAR_UUID) {
       const [error, characteristic] = yield take(channel);
       console.log('error, characteristic: ', error, characteristic);
       yield put(log(`Get value ${base64ToHex(characteristic.value)}`));
+      if (characteristic) {
+        channel.close();
+        break;
+      }
     }
   } finally {
     console.log('saga terminated');
