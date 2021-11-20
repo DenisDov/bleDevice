@@ -149,13 +149,14 @@ function* scan(manager: BleManager): Generator<*, *, *> {
       null,
       {allowDuplicates: true},
       (error, scannedDevice) => {
+        // console.log('SCL: ', scannedDevice.localName);
         if (error) {
           emit([error, scannedDevice]);
           return;
         }
         if (
           scannedDevice != null &&
-          scannedDevice.localName === 'ASPECT_PRO_LED'
+          scannedDevice?.localName?.startsWith('ASPECT_PRO_')
         ) {
           console.log('scannedDevice: ', scannedDevice);
 
@@ -236,6 +237,7 @@ function* handleConnection(manager: BleManager): Generator<*, *, *> {
             break;
           }
           if (deviceAction.type === 'EXECUTE_TEST') {
+            console.log('ACT');
             if (testTask != null) {
               yield cancel(testTask);
             }

@@ -36,6 +36,16 @@ export const SensorTagTests: {[string]: SensorTagTestMetadata} = {
     title: 'Test write 0002',
     execute: testCommand,
   },
+  READ_PRESETS: {
+    id: 'READ_PRESETS',
+    title: 'Read presets: 0x0020',
+    execute: readPresets,
+  },
+  WRITE_PRESETS: {
+    id: 'WRITE_PRESETS',
+    title: 'Write presets: 0x0018',
+    execute: writePresets,
+  },
 };
 
 function notificationListener(device, SERVICE_UUID, CHAR_UUID) {
@@ -148,10 +158,10 @@ function* readAllCharacteristics(device: Device): Generator<*, boolean, *> {
   return true;
 }
 
-function* readTemperature(device: Device): Generator<*, boolean, *> {
-  yield put(log('Read temperature'));
-  return false;
-}
+// function* readTemperature(device: Device): Generator<*, boolean, *> {
+//   yield put(log('Read temperature'));
+//   return false;
+// }
 
 function* testCommand(device) {
   // const isCONN = yield call([device, 'isConnected']);
@@ -189,3 +199,54 @@ function* testCommand(device) {
 // SERVICE UUID = 6e400001-b5a3-f393-e0a9-e50e24dcca9e
 // RX CHARACTERISTIC UUID = 6e400002-b5a3-f393-e0a9-e50e24dcca9e
 // TX CHARACTERISTIC UUID = 6e400002-b5a3-f393-e0a9-e50e24dcca9e
+
+function* readPresets(device) {
+  yield put(log('Read presets: 0x0020'));
+
+  try {
+    yield spawn(
+      notificationSaga,
+      device,
+      '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
+      '6e400003-b5a3-f393-e0a9-e50e24dcca9e',
+    );
+
+    yield call(
+      [device, 'writeCharacteristicWithoutResponseForService'],
+      '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // SERVICE UUID
+      '6e400002-b5a3-f393-e0a9-e50e24dcca9e', // RX CHARACTERISTIC UUID
+      'ACA=', // VALUE in base64 (in hex is 0020)
+    );
+  } catch (error) {
+    console.log('error: ', error);
+    yield put(logError(error));
+    return false;
+  }
+
+  return true;
+}
+function* writePresets(device) {
+  yield put(log('Write presets: 0x0018'));
+
+  try {
+    yield spawn(
+      notificationSaga,
+      device,
+      '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
+      '6e400003-b5a3-f393-e0a9-e50e24dcca9e',
+    );
+
+    yield call(
+      [device, 'writeCharacteristicWithoutResponseForService'],
+      '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // SERVICE UUID
+      '6e400002-b5a3-f393-e0a9-e50e24dcca9e', // RX CHARACTERISTIC UUID
+      'ABgBAgMEBQYHCAkKCwwNDg8=', // VALUE in base64 (in hex is 00180102030405060708090A0B0C0D0E0F
+    );
+  } catch (error) {
+    console.log('error: ', error);
+    yield put(logError(error));
+    return false;
+  }
+
+  return true;
+}
